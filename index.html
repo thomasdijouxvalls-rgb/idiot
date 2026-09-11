@@ -8,33 +8,87 @@
 </head>
 <body class="h-full flex flex-col justify-between p-4 max-w-4xl mx-auto font-sans">
 
+  <!-- EN-TÊTE -->
   <header class="bg-slate-800 border-2 border-red-500/50 rounded-xl p-4 shadow-lg flex items-center justify-between gap-4">
     <div class="flex items-center gap-4">
-      <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center font-black text-2xl border-2 border-white shadow-inner">JL</div>
+      <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center font-black text-2xl border-2 border-white shadow-inner shrink-0">JL</div>
       <div>
         <h1 class="text-xl font-bold text-red-500 uppercase">Jean-Luc Deshman</h1>
-        <p id="speech-bubble" class="text-sm italic text-slate-300">« Cliquez sur le bouton en bas pour démarrer. »</p>
+        <p id="speech-bubble" class="text-sm italic text-slate-300">« Cliquez sur le bouton en bas pour connecter Jean-Luc. »</p>
       </div>
     </div>
-    <div id="status-mic" class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-700 text-xs font-bold text-slate-400">
-      <span class="w-2.5 h-2.5 rounded-full bg-red-500" id="mic-dot"></span>
-      <span id="mic-text">Inactif</span>
+    
+    <div class="flex items-center gap-2">
+      <div id="status-mic" class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-700 text-xs font-bold text-slate-400">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500" id="mic-dot"></span>
+        <span id="mic-text">Inactif</span>
+      </div>
+      <!-- BOUTON DÉJÀ VU INDÉPENDANT -->
+      <button onclick="ouvrirModalDejaVu()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-2 rounded font-bold border border-slate-500 shrink-0">
+        📜 (deja vu !)
+      </button>
     </div>
   </header>
 
-  <main class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-2xl my-4 flex-1 flex flex-col justify-between">
-    <h3 class="text-xl font-bold mb-6 text-slate-50">Plateau de jeu - Gemini Live Direct</h3>
-    <div id="scoreboard" class="grid grid-cols-2 gap-3 mb-6">
-      <div class="bg-slate-900 p-3 rounded border border-slate-700">Joueur 1 : <span class="text-amber-400 font-bold">0 pts</span></div>
-      <div class="bg-slate-900 p-3 rounded border border-slate-700">Joueur 2 : <span class="text-amber-400 font-bold">0 pts</span></div>
+  <!-- BULLE DE TRANSCRIPTION EN DIRECT -->
+  <section class="my-3">
+    <div class="bg-slate-950/80 border border-emerald-500/40 rounded-xl p-3 flex items-center gap-3 shadow-inner">
+      <div class="relative flex h-3 w-3 shrink-0">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+      </div>
+      <div class="overflow-hidden">
+        <p class="text-[10px] uppercase tracking-widest font-bold text-emerald-500">Ce que le micro entend en direct :</p>
+        <p id="live-transcript" class="text-sm font-mono text-emerald-300 italic truncate">(En attente de parole...)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLATEAU DE JEU -->
+  <main class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-2xl flex-1 flex flex-col justify-between">
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <span id="badge-etape" class="bg-indigo-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Étape 0 : Attente de DÉMARRER</span>
+      </div>
+
+      <div id="scoreboard" class="grid grid-cols-2 gap-3 mb-6">
+        <div class="bg-slate-900 p-3 rounded border border-slate-700">Joueur 1 : <span class="text-amber-400 font-bold">0 pts</span></div>
+        <div class="bg-slate-900 p-3 rounded border border-slate-700">Joueur 2 : <span class="text-amber-400 font-bold">0 pts</span></div>
+      </div>
+    </div>
+
+    <!-- MOTS-CLÉS VOCAUX -->
+    <div class="border-t border-slate-700/60 pt-4 flex flex-wrap justify-between items-center text-xs text-slate-400 font-mono">
+      <span>Commandes vocales captées :</span>
+      <span class="text-emerald-400 font-bold">« DÉMARRER »</span>
+      <span class="text-red-400 font-bold">« RIDEAU »</span>
+      <span class="text-amber-400 font-bold">« LOOPING »</span>
+      <span class="text-slate-300 font-bold">« TU VAS OÙ SANS CASQUE »</span>
     </div>
   </main>
 
-  <footer>
+  <!-- PIED DE PAGE -->
+  <footer class="mt-4">
     <button id="btn-start" onclick="connecter()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg text-sm shadow-lg">
       🎙️ Connexion au Serveur Gemini Live
     </button>
   </footer>
+
+  <!-- MODALE HISTORIQUE DÉJÀ VU ! -->
+  <div id="modal-dejavu" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-2xl w-full max-h-[80vh] flex flex-col justify-between shadow-2xl">
+      <div>
+        <h3 class="text-lg font-bold text-amber-400 mb-2 uppercase tracking-wide">📜 Historique "(deja vu !)"</h3>
+        <p class="text-xs text-slate-400 mb-4">Questions mémorisées indépendamment des parties en cours.</p>
+        <div id="dejavu-list" class="overflow-y-auto max-h-[50vh] space-y-2 pr-2"></div>
+      </div>
+      <div class="mt-4 text-right">
+        <button onclick="fermerModalDejaVu()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-4 py-2 rounded">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script>
     let ws = null;
@@ -42,6 +96,8 @@
     let audioOutputCtx = null;
     let isSpeaking = false;
     let audioQueue = [];
+    let speechRecognizer = null;
+    let etapeActuelle = 0;
 
     async function connecter() {
       const btn = document.getElementById('btn-start');
@@ -63,6 +119,7 @@
         document.getElementById('mic-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
         document.getElementById('mic-text').innerText = "JL écoute";
         demarrerMicro();
+        demarrerTranscriptionDirecte();
       };
 
       ws.onmessage = (event) => {
@@ -90,7 +147,7 @@
         const processor = audioInputCtx.createScriptProcessor(4096, 1, 1);
 
         processor.onaudioprocess = (e) => {
-          if (isSpeaking) return; // Coupure micro anti-écho
+          if (isSpeaking) return;
 
           if (ws && ws.readyState === WebSocket.OPEN) {
             const input = e.inputBuffer.getChannelData(0);
@@ -106,8 +163,49 @@
         source.connect(processor);
         processor.connect(audioInputCtx.destination);
       } catch (e) {
-        console.error("Micro accès refusé :", e);
+        console.error("Accès microphone refusé :", e);
       }
+    }
+
+    function demarrerTranscriptionDirecte() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+
+      speechRecognizer = new SpeechRecognition();
+      speechRecognizer.lang = 'fr-FR';
+      speechRecognizer.continuous = true;
+      speechRecognizer.interimResults = true;
+
+      speechRecognizer.onresult = (event) => {
+        if (isSpeaking) return;
+
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+
+        const texteClair = transcript.toLowerCase().trim();
+        if (texteClair) {
+          document.getElementById('live-transcript').innerText = `« ${transcript} »`;
+
+          // Transition automatique des étapes
+          if (texteClair.includes("démarrer") || texteClair.includes("demarrer")) {
+            if (etapeActuelle === 0) {
+              etapeActuelle = 1;
+              document.getElementById('badge-etape').innerText = `Étape ${etapeActuelle} : Partie lancée`;
+            }
+          } else if (texteClair.includes("rideau") && etapeActuelle > 0) {
+            etapeActuelle++;
+            document.getElementById('badge-etape').innerText = `Étape ${etapeActuelle} : Manche suivante`;
+          }
+        }
+      };
+
+      speechRecognizer.onend = () => {
+        try { speechRecognizer.start(); } catch(e){}
+      };
+
+      try { speechRecognizer.start(); } catch(e){}
     }
 
     function jouerAudioQueue() {
@@ -126,9 +224,23 @@
       source.onended = () => jouerAudioQueue();
       source.start(0);
     }
-  </script>
-</body>
-</html>
+
+    // --- FONCTIONS FICHIER DÉJÀ VU ---
+    function getDejaVu() { return JSON.parse(localStorage.getItem('DEJA_VU') || '[]'); }
+
+    function ouvrirModalDejaVu() {
+      const list = getDejaVu();
+      const container = document.getElementById('dejavu-list');
+      container.innerHTML = list.length === 0 ? `<p class="text-sm italic text-slate-500">Aucune question enregistrée pour l'instant.</p>` : list.map((q, i) => `
+        <div class="bg-slate-900/60 p-2.5 rounded border border-slate-700/50 text-xs text-slate-300">
+          <span class="font-bold text-amber-500 mr-2">#${i + 1}</span> ${q}
+        </div>
+      `).join('');
+      document.getElementById('modal-dejavu').classList.remove('hidden');
+    }
+
+    function fermerModalDejaVu() {
+      document.getElementById('modal-dejavu').classList.add('hidden');
     }
   </script>
 </body>
