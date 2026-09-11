@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Les Idiots du Village - Serveur Relais</title>
+  <title>Les Idiots du Village - Jean-Luc Live</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="h-full flex flex-col justify-between p-4 max-w-4xl mx-auto font-sans">
@@ -13,17 +13,17 @@
       <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center font-black text-2xl border-2 border-white shadow-inner">JL</div>
       <div>
         <h1 class="text-xl font-bold text-red-500 uppercase">Jean-Luc Deshman</h1>
-        <p id="speech-bubble" class="text-sm italic text-slate-300">« Cliquez sur "Connexion Serveur" pour lancer. »</p>
+        <p id="speech-bubble" class="text-sm italic text-slate-300">« Cliquez sur le bouton en bas pour démarrer. »</p>
       </div>
     </div>
     <div id="status-mic" class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-700 text-xs font-bold text-slate-400">
       <span class="w-2.5 h-2.5 rounded-full bg-red-500" id="mic-dot"></span>
-      <span id="mic-text">Hors ligne</span>
+      <span id="mic-text">Inactif</span>
     </div>
   </header>
 
   <main class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-2xl my-4 flex-1 flex flex-col justify-between">
-    <h3 class="text-xl font-bold mb-6 text-slate-50">Plateau de jeu - Connexion directe backend</h3>
+    <h3 class="text-xl font-bold mb-6 text-slate-50">Plateau de jeu - Gemini Live Direct</h3>
     <div id="scoreboard" class="grid grid-cols-2 gap-3 mb-6">
       <div class="bg-slate-900 p-3 rounded border border-slate-700">Joueur 1 : <span class="text-amber-400 font-bold">0 pts</span></div>
       <div class="bg-slate-900 p-3 rounded border border-slate-700">Joueur 2 : <span class="text-amber-400 font-bold">0 pts</span></div>
@@ -46,10 +46,13 @@
     async function connecter() {
       const btn = document.getElementById('btn-start');
       btn.disabled = true;
-      btn.innerText = "⏳ Connexion...";
+      btn.innerText = "⏳ Connexion à Jean-Luc...";
 
       audioInputCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
       audioOutputCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+
+      if (audioInputCtx.state === 'suspended') await audioInputCtx.resume();
+      if (audioOutputCtx.state === 'suspended') await audioOutputCtx.resume();
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
@@ -64,6 +67,9 @@
 
       ws.onmessage = (event) => {
         isSpeaking = true;
+        document.getElementById('mic-dot').className = "w-2.5 h-2.5 rounded-full bg-red-500";
+        document.getElementById('mic-text').innerText = "JL parle";
+
         const pcm16Data = new Int16Array(event.data);
         const float32Data = new Float32Array(pcm16Data.length);
         for (let i = 0; i < pcm16Data.length; i++) {
@@ -78,31 +84,39 @@
     }
 
     async function demarrerMicro() {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000 } });
-      const source = audioInputCtx.createMediaStreamSource(stream);
-      const processor = audioInputCtx.createScriptProcessor(4096, 1, 1);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000 } });
+        const source = audioInputCtx.createMediaStreamSource(stream);
+        const processor = audioInputCtx.createScriptProcessor(4096, 1, 1);
 
-      processor.onaudioprocess = (e) => {
-        if (isSpeaking) return;
+        processor.onaudioprocess = (e) => {
+          if (isSpeaking) return; // Coupure micro anti-écho
 
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          const input = e.inputBuffer.getChannelData(0);
-          const pcm16 = new Int16Array(input.length);
-          for (let i = 0; i < input.length; i++) {
-            let s = Math.max(-1, Math.min(1, input[i]));
-            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            const input = e.inputBuffer.getChannelData(0);
+            const pcm16 = new Int16Array(input.length);
+            for (let i = 0; i < input.length; i++) {
+              let s = Math.max(-1, Math.min(1, input[i]));
+              pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            ws.send(pcm16.buffer);
           }
-          ws.send(pcm16.buffer);
-        }
-      };
+        };
 
-      source.connect(processor);
-      processor.connect(audioInputCtx.destination);
+        source.connect(processor);
+        processor.connect(audioInputCtx.destination);
+      } catch (e) {
+        console.error("Micro accès refusé :", e);
+      }
     }
 
     function jouerAudioQueue() {
       if (audioQueue.length === 0) {
-        setTimeout(() => { isSpeaking = false; }, 200);
+        setTimeout(() => {
+          isSpeaking = false;
+          document.getElementById('mic-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+          document.getElementById('mic-text').innerText = "JL écoute";
+        }, 200);
         return;
       }
       const buffer = audioQueue.shift();
@@ -111,6 +125,10 @@
       source.connect(audioOutputCtx.destination);
       source.onended = () => jouerAudioQueue();
       source.start(0);
+    }
+  </script>
+</body>
+</html>
     }
   </script>
 </body>
