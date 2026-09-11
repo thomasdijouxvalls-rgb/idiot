@@ -3,13 +3,11 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import types
 
 app = FastAPI()
 
-# Clé API récupérée depuis la variable d'environnement sur Render
 API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6KX94n07BM31htZqTRxwNAzLkP7hnsYkbL_JHW_49NDTg")
 
 SYSTEM_PROMPT = """
@@ -18,7 +16,7 @@ Tu animes la partie en direct avec la voix.
 
 Consignes :
 1. Sois incisif, drôle, mordant et percutant.
-2. Salue les cobayes, demande le nombre de manches et leurs prénoms.
+2. Salue immédiatement les cobayes, demande-leur le nombre de manches qu'ils veulent et leurs prénoms.
 3. Attends impérativement le mot "RIDEAU" avant de valider une réponse.
 4. Gère "LOOPING" (annuler la question) et "TU VAS OÙ SANS CASQUE" (contestation avec bonus/malus).
 """
@@ -32,6 +30,7 @@ async def get_index():
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     
+    # Utilisation du client officiel v1alpha
     client = genai.Client(api_key=API_KEY, http_options={'api_version': 'v1alpha'})
     
     config = types.LiveConnectConfig(
@@ -45,8 +44,12 @@ async def websocket_endpoint(websocket: WebSocket):
     )
 
     try:
-        async with client.aio.live.connect(model="gemini-2.5-flash", config=config) as session:
+        # Modèle officiel Gemini 2.0 Flash Exp pour le flux Bidi Live
+        async with client.aio.live.connect(model="gemini-2.0-flash-exp", config=config) as session:
             
+            # Déclencheur vocal : On envoie un premier tour pour forcer Jean-Luc à saluer
+            await session.send(input="Bonjour Jean-Luc, lance la partie !", end_of_turn=True)
+
             async def client_to_gemini():
                 try:
                     while True:
@@ -61,7 +64,8 @@ async def websocket_endpoint(websocket: WebSocket):
                         server_content = response.server_content
                         if server_content and server_content.model_turn:
                             for part in server_content.model_turn.parts:
-                                if part.inline_data:
+                                if part.inline_data and part.inline_data.data:
+                                    # Envoi du flux audio binaire au client web
                                     await websocket.send_bytes(part.inline_data.data)
                 except Exception as e:
                     print(f"Erreur flux Gemini : {e}")
