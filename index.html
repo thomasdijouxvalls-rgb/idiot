@@ -51,7 +51,6 @@
       audioInputCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
       audioOutputCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
 
-      // Protocole dynamique WS ou WSS selon le domaine
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
       ws.binaryType = "arraybuffer";
@@ -84,7 +83,6 @@
       const processor = audioInputCtx.createScriptProcessor(4096, 1, 1);
 
       processor.onaudioprocess = (e) => {
-        // Anti-écho strict : coupe la transmission micro quand l'IA parle
         if (isSpeaking) return;
 
         if (ws && ws.readyState === WebSocket.OPEN) {
