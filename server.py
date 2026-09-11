@@ -12,13 +12,20 @@ API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6KX94n07BM31htZqTRxwNAzLkP7h
 
 SYSTEM_PROMPT = """
 Tu es Jean-Luc Deshman, l'animateur cynique, franc, sarcastique et pince-sans-rire du jeu "Les Idiots du Village".
-Tu animes la partie en direct avec la voix. 
+Tu animes la partie en direct avec la voix.
 
-Consignes :
-1. Sois incisif, drôle, mordant et percutant.
-2. Salue immédiatement les cobayes, demande-leur le nombre de manches qu'ils veulent et leurs prénoms.
-3. Attends impérativement le mot "RIDEAU" avant de valider une réponse.
-4. Gère "LOOPING" (annuler la question) et "TU VAS OÙ SANS CASQUE" (contestation avec bonus/malus).
+Consignes de progression stricte :
+1. ÉTAPE 0 (Connexion / Attente) : Salue les joueurs de manière incisive et demande-leur de dire "DÉMARRER" quand ils sont prêts, puis de donner leurs prénoms et le nombre de manches.
+2. ÉTAPE 1 ET SUIVANTES (Manches de jeu) :
+   - Dès que le mot "DÉMARRER" ou les prénoms sont donnés, passe immédiatement à l'Étape 1.
+   - Propose les choix de questions : "Direct comme ça" (6 pts), "Tête au carré" (4 pts), "Plan à 3" (3 pts) ou "À deux c'est bien" (1 pt).
+   - Pour les matières scolaires (histoire, géo, sciences), adapte la rigueur au niveau de difficulté.
+   - Pour les autres thèmes, utilise de la culture générale globale.
+   - Laisse les joueurs échanger. RÈGLE ABSOLUE : N'évalue aucune réponse tant que tu n'as pas entendu "RIDEAU" !
+3. COMMANDES SPÉCIALES :
+   - "RIDEAU" : Valide la réponse, donne le résultat avec une vanne et enchaîne sur l'étape/manche suivante.
+   - "LOOPING" : Annule la question en cours sans points et tire une nouvelle question de replacement.
+   - "TU VAS OÙ SANS CASQUE" : Gère la contestation (+2 pts si fondée, -2 pts et vanne si injustifiée).
 """
 
 @app.get("/")
@@ -30,7 +37,6 @@ async def get_index():
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     
-    # Utilisation du client officiel v1alpha
     client = genai.Client(api_key=API_KEY, http_options={'api_version': 'v1alpha'})
     
     config = types.LiveConnectConfig(
@@ -44,11 +50,10 @@ async def websocket_endpoint(websocket: WebSocket):
     )
 
     try:
-        # Modèle officiel Gemini 2.0 Flash Exp pour le flux Bidi Live
         async with client.aio.live.connect(model="gemini-2.0-flash-exp", config=config) as session:
             
-            # Déclencheur vocal : On envoie un premier tour pour forcer Jean-Luc à saluer
-            await session.send(input="Bonjour Jean-Luc, lance la partie !", end_of_turn=True)
+            # Déclenchement automatique du salut de Jean-Luc à la connexion
+            await session.send(input="Connexion établie. Jean-Luc, salue les cobayes et demande-leur de dire DÉMARRER !", end_of_turn=True)
 
             async def client_to_gemini():
                 try:
@@ -65,7 +70,6 @@ async def websocket_endpoint(websocket: WebSocket):
                         if server_content and server_content.model_turn:
                             for part in server_content.model_turn.parts:
                                 if part.inline_data and part.inline_data.data:
-                                    # Envoi du flux audio binaire au client web
                                     await websocket.send_bytes(part.inline_data.data)
                 except Exception as e:
                     print(f"Erreur flux Gemini : {e}")
